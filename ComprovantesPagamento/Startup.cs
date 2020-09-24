@@ -35,10 +35,12 @@ namespace ComprovantesPagamento
         public void ConfigureServices(IServiceCollection services)
         {
             var dbConfig = Configuration.GetSection("MongoDB").Get<DatabaseConfig>();
+            var dropboxConfig = Configuration.GetSection("Dropbox").Get<DropboxConfig>();
 
             services.AddTransient<PaymentTypeRepository>();
+            services.AddSingleton<DropboxService>();
             services.AddSingleton<IDbService>(new DbService(dbConfig));
-
+            services.AddSingleton(dropboxConfig);
 
             #region Automapper
             var config = new AutoMapper.MapperConfiguration(cfg =>

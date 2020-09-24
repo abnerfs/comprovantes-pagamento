@@ -3,11 +3,14 @@ using ComprovantesPagamento.Domain.Models;
 using ComprovantesPagamento.Domain.Responses;
 using ComprovantesPagamento.Repositories;
 using ComprovantesPagamento.Requests;
+using ComprovantesPagamento.Services;
+using Dropbox.Api;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace ComprovantesPagamento.Controllers
 {
@@ -17,11 +20,15 @@ namespace ComprovantesPagamento.Controllers
     {
         private IMapper _mapper;
         private PaymentTypeRepository _repository;
+        private DropboxConfig _dropboxConfig;
+        private DropboxService _dropboxService;
 
-        public PaymentTypeController(PaymentTypeRepository repository, IMapper mapper)
+        public PaymentTypeController(PaymentTypeRepository repository, IMapper mapper, DropboxConfig dropboxConfig, DropboxService dropboxService)
         {
             _mapper = mapper;
             _repository = repository;
+            _dropboxConfig = dropboxConfig;
+            _dropboxService = dropboxService;
         }
 
         [HttpGet]
@@ -45,7 +52,7 @@ namespace ComprovantesPagamento.Controllers
 
         [HttpPut("{id}")]
         [ProducesResponseType(typeof(PaymentTypeResponse), StatusCodes.Status200OK)]
-        public IActionResult Update([FromRoute] string id,  [FromBody] PaymentTypeRequest request)
+        public IActionResult Update([FromRoute] string id, [FromBody] PaymentTypeRequest request)
         {
             try
             {
@@ -58,6 +65,9 @@ namespace ComprovantesPagamento.Controllers
                 var type = _repository.Get(id);
                 if (type == null)
                     return BadRequest("Invalid payment type");
+
+                //TODO: block code change when there is at least one payment stored
+
 
                 type.Code = request.Code;
                 type.Description = request.Description;
@@ -114,10 +124,57 @@ namespace ComprovantesPagamento.Controllers
                     UpdateDate = null
                 };
 
-                 _repository.Insert(type);
+                _repository.Insert(type);
 
                 var response = _mapper.Map<PaymentType, PaymentTypeResponse>(type);
                 return Ok(response);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
+        [HttpPost("{typeId}/payment")]
+        public async Task<IActionResult> InsertPayment(
+            [FromForm(Name = "payment_receipt")] IFormFile paymentReceipt,
+            [FromForm(Name = "payment_document")] IFormFile paymentDocument,
+            [FromForm(Name = "description")] string description,
+            [FromForm(Name = "payment_date")] DateTime paymentDate,
+            [FromRoute] string typeId)
+        {
+            try
+            {
+                if (paymentDate == default)
+                    return BadRequest("Invalid payment date");
+
+                if (string.IsNullOrWhiteSpace(description))
+                    return BadRequest("Invalid escription");
+
+                if (paymentReceipt == default)
+                    return BadRequest("Payment receipt not found");
+
+                if (paymentDocument == default)
+                    return BadRequest("Payment document not found");
+
+                var type = _repository.Get(typeId);
+                if (type == null)
+                    return BadRequest("Invalid payment type");
+
+                var month = paymentDate.Month;
+                var year = paymentDate.Year;
+
+                var folderName = $"/{type.Code}/{year}/{month}";
+                _dropboxService.CreateFolderIfNotExists(folderName);
+
+                var receiptFileName = folderName + $"/{type.Code}_receipt_{year}_{month}.pdf";
+                var documentFileName = folderName + $"/{type.Code}_document_{year}_{month}.pdf";
+
+                await _dropboxService.Upload(receiptFileName, paymentReceipt);
+                await _dropboxService.Upload(documentFileName, paymentDocument);
+
+                return Ok();
             }
             catch (Exception)
             {
