@@ -44,7 +44,29 @@ namespace ComprovantesPagamento.Services
             }
         }
 
-        public Dropbox.Api.Files.Metadata GetFile(string displayPath)
+        public DeleteResult DeletePathIfExists(string pathName)
+        {
+            try
+            {
+                var file = GetPath(pathName);
+                if (file == null)
+                    return null;
+
+                using var dbx = dropboxClient;
+                var result = dbx.Files.DeleteV2Async(pathName)
+                    .Result;
+
+                return result;
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
+
+        public Dropbox.Api.Files.Metadata GetPath(string displayPath)
         {
             try
             {
@@ -68,11 +90,11 @@ namespace ComprovantesPagamento.Services
             try
             {
                 using var dbx = dropboxClient;
-                var folder = GetFile(path);
+                var folder = GetPath(path);
                 if (folder == null)
                     dbx.Files.CreateFolderV2Async(path);
 
-                return GetFile(path);
+                return GetPath(path);
             }
             catch (Exception)
             {
