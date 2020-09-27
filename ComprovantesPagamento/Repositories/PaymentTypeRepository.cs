@@ -15,6 +15,20 @@ namespace ComprovantesPagamento.Repositories
 
         }
 
+        public IEnumerable<PaymentType> List(string userId)
+        {
+            try
+            {
+                return Collection.Find(Filter.Eq("user_id", userId))
+                    .ToList();
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
 
         public PaymentType GetByCode(string Code)
         {

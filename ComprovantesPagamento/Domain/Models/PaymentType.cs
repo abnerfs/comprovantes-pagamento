@@ -22,6 +22,10 @@ namespace ComprovantesPagamento.Domain.Models
         [BsonElement("create_date")]
         public DateTime CreateDate { get; set; }
 
+        [BsonElement("user_id")]
+        public string UserId { get; set; }
+
+
         [BsonElement("update_date")]
         public DateTime? UpdateDate { get; set; }
     }

@@ -16,11 +16,29 @@ namespace ComprovantesPagamento.Domain.Models
         [BsonElement("description")]
         public string Description { get; set; }
 
+
         [BsonElement("payment_receipt")]
         public string PaymentReceipt { get; set; }
 
+
         [BsonElement("payment_document")]
         public string PaymentDocument { get; set; }
+
+
+        [BsonElement("payment_type")]
+        public string PaymentType { get; set; }
+
+
+        [BsonElement("user_id")]
+        public string UserId { get; set; }
+
+        [BsonElement("payed")]
+        public bool Payed { get; set; }
+
+
+        [BsonElement("payment_date")]
+        public DateTime? PaymentDate { get; set; } = null;
+
 
         [BsonElement("create_date")]
         public DateTime CreateDate { get; set; }

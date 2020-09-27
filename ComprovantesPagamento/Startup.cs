@@ -1,19 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using ComprovantesPagamento.Contracts;
 using ComprovantesPagamento.Domain.Models;
 using ComprovantesPagamento.Domain.Responses;
 using ComprovantesPagamento.Repositories;
 using ComprovantesPagamento.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace ComprovantesPagamento
 {
@@ -36,11 +31,21 @@ namespace ComprovantesPagamento
         {
             var dbConfig = Configuration.GetSection("MongoDB").Get<DatabaseConfig>();
             var dropboxConfig = Configuration.GetSection("Dropbox").Get<DropboxConfig>();
+            var jwtConfig = Configuration.GetSection("JWT").Get<JwtConfig>();
 
+            var jwtService = new JwtService(jwtConfig);
+            services.AddSingleton(jwtService);
+            services.AddSingleton(jwtConfig);
             services.AddTransient<PaymentTypeRepository>();
+            services.AddTransient<UserRepository>();
             services.AddSingleton<DropboxService>();
             services.AddSingleton<IDbService>(new DbService(dbConfig));
             services.AddSingleton(dropboxConfig);
+
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = jwtService.GetTokenValidationParams();
+            });
 
             #region Automapper
             var config = new AutoMapper.MapperConfiguration(cfg =>
@@ -63,7 +68,7 @@ namespace ComprovantesPagamento
             }
 
             app.UseRouting();
-
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>

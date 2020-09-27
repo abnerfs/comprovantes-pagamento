@@ -4,7 +4,7 @@ using ComprovantesPagamento.Domain.Responses;
 using ComprovantesPagamento.Repositories;
 using ComprovantesPagamento.Requests;
 using ComprovantesPagamento.Services;
-using Dropbox.Api;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -14,8 +14,9 @@ using System.Threading.Tasks;
 
 namespace ComprovantesPagamento.Controllers
 {
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [Route("payment_type")]
+    [Authorize]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public class PaymentTypeController : BaseController
     {
         private IMapper _mapper;
@@ -37,7 +38,7 @@ namespace ComprovantesPagamento.Controllers
         {
             try
             {
-                var types = _repository.List()
+                var types = _repository.List(UserID)
                     .Select(_mapper.Map<PaymentType, PaymentTypeResponse>)
                     .ToArray();
 
@@ -63,12 +64,10 @@ namespace ComprovantesPagamento.Controllers
                     return BadRequest("Invalid description");
 
                 var type = _repository.Get(id);
-                if (type == null)
+                if (type == null || type.UserId != UserID)
                     return BadRequest("Invalid payment type");
 
                 //TODO: block code change when there is at least one payment stored
-
-
                 type.Code = request.Code;
                 type.Description = request.Description;
                 type.UpdateDate = DateTime.Now;
@@ -91,7 +90,7 @@ namespace ComprovantesPagamento.Controllers
             try
             {
                 var type = _repository.Get(id);
-                if (type == null)
+                if (type == null || type.UserId != UserID)
                     return BadRequest("Invalid payment type");
 
                 _repository.Delete(id);
@@ -121,7 +120,8 @@ namespace ComprovantesPagamento.Controllers
                     Code = request.Code,
                     Description = request.Description,
                     CreateDate = DateTime.Now,
-                    UpdateDate = null
+                    UpdateDate = null,
+                    UserId = UserID
                 };
 
                 _repository.Insert(type);
