@@ -25,6 +25,11 @@ namespace ComprovantesPagamento.Repositories
             return Filter.Eq("_id", ObjectId.Parse(id));
         }
 
+        protected FilterDefinition<T> FilterUserID(string userId)
+        {
+            return Filter.Eq("user_id", userId);
+        }
+
 
         protected UpdateDefinitionBuilder<T> UpdateDefinition => Builders<T>.Update;
 

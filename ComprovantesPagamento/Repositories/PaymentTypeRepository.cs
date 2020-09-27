@@ -29,12 +29,28 @@ namespace ComprovantesPagamento.Repositories
             }
         }
 
-
-        public PaymentType GetByCode(string Code)
+        public PaymentType GetByUserID(string userId, string id)
         {
             try
             {
-                var type = Collection.Find(Filter.Eq("code", Code))
+                var type = Collection.Find(Filter.And(FilterUserID(userId), FilterId(id)))
+                    .FirstOrDefault();
+
+                return type;
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
+
+        public PaymentType GetByCode(string userId, string Code)
+        {
+            try
+            {
+                var type = Collection.Find(Filter.And(Filter.Eq("user_id", userId), Filter.Eq("code", Code)))
                     .FirstOrDefault();
 
                 return type;

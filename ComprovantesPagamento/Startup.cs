@@ -37,6 +37,7 @@ namespace ComprovantesPagamento
             services.AddSingleton(jwtService);
             services.AddSingleton(jwtConfig);
             services.AddTransient<PaymentTypeRepository>();
+            services.AddTransient<PaymentRepository>();
             services.AddTransient<UserRepository>();
             services.AddSingleton<DropboxService>();
             services.AddSingleton<IDbService>(new DbService(dbConfig));
