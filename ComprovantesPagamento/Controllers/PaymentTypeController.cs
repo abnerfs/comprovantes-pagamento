@@ -22,15 +22,13 @@ namespace ComprovantesPagamento.Controllers
     {
         private IMapper _mapper;
         private PaymentTypeRepository _repository;
-        private DropboxConfig _dropboxConfig;
         private DropboxService _dropboxService;
         private PaymentRepository _paymentRepository;
 
-        public PaymentTypeController(PaymentTypeRepository repository, IMapper mapper, DropboxConfig dropboxConfig, DropboxService dropboxService, PaymentRepository paymentRepository)
+        public PaymentTypeController(PaymentTypeRepository repository, IMapper mapper,  DropboxService dropboxService, PaymentRepository paymentRepository)
         {
             _mapper = mapper;
             _repository = repository;
-            _dropboxConfig = dropboxConfig;
             _dropboxService = dropboxService;
             _paymentRepository = paymentRepository;
         }
@@ -155,7 +153,29 @@ namespace ComprovantesPagamento.Controllers
             }
         }
 
+        [HttpDelete("{typeId}/payment/{paymentId}")]
+        public IActionResult DeletePayment([FromRoute] string paymentId)
+        {
+            try
+            {
+                var payment = _paymentRepository.GetByUser(UserID, paymentId);
+                if (payment == null)
+                    return BadRequest("Invalid payment");
+
+                //TODO: Delete from dropx
+                _paymentRepository.Delete(paymentId);
+                return NoContent();
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
+
         [HttpPut("{typeId}/payment/{paymentId}")]
+        [ProducesResponseType(typeof(PaymentResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdatePayment(
             [FromForm(Name = "payment_receipt")] IFormFile paymentReceipt,
             [FromForm(Name = "payment_document")] IFormFile paymentDocument,
@@ -194,8 +214,6 @@ namespace ComprovantesPagamento.Controllers
 
                 payment.Description = description;
 
-                
-
                 payment.Month = month;
                 payment.Year = year;
 
@@ -224,7 +242,9 @@ namespace ComprovantesPagamento.Controllers
                 }
 
                 _paymentRepository.Update(paymentId, payment);
-                return Ok(payment);
+
+                var paymentResponse = _mapper.Map<Payment, PaymentResponse>(payment);
+                return Ok(paymentResponse);
             }
             catch (Exception)
             {
@@ -234,11 +254,15 @@ namespace ComprovantesPagamento.Controllers
         }
 
         [HttpGet("{typeId}/payment")]
+        [ProducesResponseType(typeof(IEnumerable<PaymentResponse>), StatusCodes.Status200OK)]
         public IActionResult ListPayment([FromRoute] string typeId)
         {
             try
             {
-                var payments = _paymentRepository.ListPayment(UserID, typeId);
+                var payments = _paymentRepository.ListPayment(UserID, typeId)
+                    .Select(_mapper.Map<Payment, PaymentResponse>)
+                    .ToList();
+
                 return Ok(payments);
             }
             catch (Exception)
@@ -250,6 +274,7 @@ namespace ComprovantesPagamento.Controllers
 
 
         [HttpPost("{typeId}/payment")]
+        [ProducesResponseType(typeof(PaymentResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> InsertPayment(
             [FromForm(Name = "payment_receipt")] IFormFile paymentReceipt,
             [FromForm(Name = "payment_document")] IFormFile paymentDocument,
@@ -305,7 +330,9 @@ namespace ComprovantesPagamento.Controllers
                 }
 
                 _paymentRepository.Insert(payment);
-                return Ok(payment);
+
+                var paymentResponse = _mapper.Map<Payment, PaymentResponse>(payment);
+                return Ok(paymentResponse);
             }
             catch (Exception)
             {

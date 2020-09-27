@@ -52,6 +52,7 @@ namespace ComprovantesPagamento
             var config = new AutoMapper.MapperConfiguration(cfg =>
             {
                 cfg.CreateMap<PaymentType, PaymentTypeResponse>();
+                cfg.CreateMap<Payment, PaymentResponse>();
             });
 
             services.AddSingleton(config.CreateMapper());
