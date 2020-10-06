@@ -64,6 +64,12 @@ namespace ComprovantesPagamento.Controllers
                 if (string.IsNullOrWhiteSpace(request.Description))
                     return BadRequest("Invalid description");
 
+                if(string.IsNullOrWhiteSpace(request.Icon))
+                    return BadRequest("Invalid icon");
+
+                if (string.IsNullOrWhiteSpace(request.Color))
+                    return BadRequest("Invalid color");
+
                 var type = _repository.GetByUserID(UserID, id);
                 if (type == null)
                     return BadRequest("Invalid payment type");
@@ -72,6 +78,8 @@ namespace ComprovantesPagamento.Controllers
                 type.Code = request.Code;
                 type.Description = request.Description;
                 type.UpdateDate = DateTime.Now;
+                type.Color = request.Color;
+                type.Icon = request.Icon;
 
                 _repository.Update(id, type);
 
@@ -116,13 +124,21 @@ namespace ComprovantesPagamento.Controllers
                 if (string.IsNullOrWhiteSpace(request.Description))
                     return BadRequest("Invalid description");
 
+                if (string.IsNullOrWhiteSpace(request.Icon))
+                    return BadRequest("Invalid icon");
+
+                if (string.IsNullOrWhiteSpace(request.Color))
+                    return BadRequest("Invalid color");
+
                 var type = new PaymentType
                 {
                     Code = request.Code,
                     Description = request.Description,
                     CreateDate = DateTime.Now,
                     UpdateDate = null,
-                    UserId = UserID
+                    UserId = UserID,
+                    Color = request.Color,
+                    Icon = request.Icon
                 };
 
                 _repository.Insert(type);

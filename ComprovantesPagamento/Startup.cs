@@ -53,6 +53,7 @@ namespace ComprovantesPagamento
             {
                 cfg.CreateMap<PaymentType, PaymentTypeResponse>();
                 cfg.CreateMap<Payment, PaymentResponse>();
+                cfg.CreateMap<User, RegisterResponse>();
             });
 
             services.AddSingleton(config.CreateMapper());

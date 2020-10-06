@@ -1,9 +1,6 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace ComprovantesPagamento.Domain.Models
 {
@@ -27,9 +24,6 @@ namespace ComprovantesPagamento.Domain.Models
 
         [BsonElement("user_id")]
         public string UserId { get; set; }
-
-        [BsonElement("payed")]
-        public bool Payed { get; set; }
 
         [BsonElement("month")]
         public int Month { get; set; }

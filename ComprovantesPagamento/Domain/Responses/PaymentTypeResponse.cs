@@ -17,6 +17,12 @@ namespace ComprovantesPagamento.Domain.Responses
         [JsonPropertyName("description")]
         public string Description { get; set; }
 
+        [JsonPropertyName("icon")]
+        public string Icon { get; set; }
+
+        [JsonPropertyName("color")]
+        public string Color { get; set; }
+
         [JsonPropertyName("create_date")]
         public DateTime CreateDate { get; set; }
 

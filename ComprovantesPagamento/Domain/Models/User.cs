@@ -24,5 +24,15 @@ namespace ComprovantesPagamento.Domain.Models
 
         [BsonElement("register_date")]
         public DateTime? RegisterDate { get; set; } = null;
+
+        [BsonElement("verified")]
+        public bool Verified { get; set; }
+
+        [BsonElement("verify_code")]
+        public string VerifyCode { get; set; }
+
+        [BsonElement("verified_date")]
+        public DateTime? VerifiedDate { get; set; } = null;
+
     }
 }

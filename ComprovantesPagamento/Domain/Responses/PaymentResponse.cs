@@ -20,9 +20,6 @@ namespace ComprovantesPagamento.Domain.Responses
         [JsonPropertyName("user_id")]
         public string UserId { get; set; }
 
-        [JsonPropertyName("payed")]
-        public bool Payed { get; set; }
-
         [JsonPropertyName("month")]
         public int Month { get; set; }
 

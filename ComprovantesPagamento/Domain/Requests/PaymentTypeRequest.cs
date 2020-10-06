@@ -13,5 +13,11 @@ namespace ComprovantesPagamento.Requests
 
         [JsonPropertyName("description")]
         public string Description { get; set; }
+
+        [JsonPropertyName("icon")]
+        public string Icon { get; set; }
+
+        [JsonPropertyName("color")]
+        public string Color { get; set; }
     }
 }
