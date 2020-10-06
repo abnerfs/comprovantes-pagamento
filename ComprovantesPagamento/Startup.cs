@@ -9,13 +9,19 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Newtonsoft.Json;
+using System;
 
 namespace ComprovantesPagamento
 {
     public class Startup
     {
+        private IHostEnvironment _env;
+
         public Startup(IConfiguration configuration, IHostEnvironment env)
         {
+            _env = env;
+
             var builder = new ConfigurationBuilder()
                 .SetBasePath(env.ContentRootPath)
                 .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
@@ -29,9 +35,24 @@ namespace ComprovantesPagamento
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            var dbConfig = Configuration.GetSection("MongoDB").Get<DatabaseConfig>();
-            var dropboxConfig = Configuration.GetSection("Dropbox").Get<DropboxConfig>();
-            var jwtConfig = Configuration.GetSection("JWT").Get<JwtConfig>();
+
+            DatabaseConfig dbConfig;
+            DropboxConfig dropboxConfig;
+            JwtConfig jwtConfig;
+            
+            if(_env.EnvironmentName == "Development")
+            {
+                dbConfig = Configuration.GetSection("MongoDB").Get<DatabaseConfig>();
+                dropboxConfig = Configuration.GetSection("Dropbox").Get<DropboxConfig>();
+                jwtConfig = Configuration.GetSection("JWT").Get<JwtConfig>();
+            }
+            else
+            {
+                dbConfig = JsonConvert.DeserializeObject<DatabaseConfig>(Environment.GetEnvironmentVariable("MONGODB_CONFIG"));
+                dropboxConfig = JsonConvert.DeserializeObject<DropboxConfig>(Environment.GetEnvironmentVariable("DROPBOX_CONFIG"));
+                jwtConfig = JsonConvert.DeserializeObject<JwtConfig>(Environment.GetEnvironmentVariable("JWT_CONFIG"));
+            }
+
 
             var jwtService = new JwtService(jwtConfig);
             services.AddSingleton(jwtService);
