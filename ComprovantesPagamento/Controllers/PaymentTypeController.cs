@@ -3,15 +3,12 @@ using ComprovantesPagamento.Domain.Models;
 using ComprovantesPagamento.Domain.Responses;
 using ComprovantesPagamento.Repositories;
 using ComprovantesPagamento.Requests;
-using ComprovantesPagamento.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace ComprovantesPagamento.Controllers
 {
@@ -22,14 +19,15 @@ namespace ComprovantesPagamento.Controllers
     {
         private IMapper _mapper;
         private PaymentTypeRepository _repository;
-        private DropboxService _dropboxService;
         private PaymentRepository _paymentRepository;
 
-        public PaymentTypeController(PaymentTypeRepository repository, IMapper mapper,  DropboxService dropboxService, PaymentRepository paymentRepository)
+        public PaymentTypeController(
+            PaymentTypeRepository repository, 
+            IMapper mapper,
+            PaymentRepository paymentRepository)
         {
             _mapper = mapper;
             _repository = repository;
-            _dropboxService = dropboxService;
             _paymentRepository = paymentRepository;
         }
 
@@ -74,8 +72,9 @@ namespace ComprovantesPagamento.Controllers
                 if (type == null)
                     return BadRequest("Invalid payment type");
 
-                //TODO: block code change when there is at least one payment stored
-                type.Code = request.Code;
+                if(type.Code != request.Code && _paymentRepository.ListPayment(UserID, type.Id).Any())
+                    return BadRequest("Can't change type code becaure the folder is already created"); 
+
                 type.Description = request.Description;
                 type.UpdateDate = DateTime.Now;
                 type.Color = request.Color;
@@ -101,6 +100,9 @@ namespace ComprovantesPagamento.Controllers
                 var type = _repository.GetByUserID(UserID, id);
                 if (type == null)
                     return BadRequest("Invalid payment type");
+
+                if (_paymentRepository.ListPayment(UserID, type.Id).Any())
+                    return BadRequest("Can't delete because there are payments created");
 
                 _repository.Delete(id);
                 return NoContent();
@@ -153,208 +155,8 @@ namespace ComprovantesPagamento.Controllers
             }
         }
 
-        async Task<string> uploadfile(IFormFile file, string folderName, string fileName)
-        {
-            try
-            {
-                _dropboxService.CreateFolderIfNotExists(folderName);
-                var fileNameUpload = Path.Combine(folderName, fileName).Replace('\\', '/');
-                await _dropboxService.Upload(fileNameUpload, file);
-                return fileNameUpload;
-            }
-            catch (Exception)
-            {
-
-                throw;
-            }
-        }
-
-        [HttpDelete("{typeId}/payment/{paymentId}")]
-        public IActionResult DeletePayment([FromRoute] string paymentId)
-        {
-            try
-            {
-                var payment = _paymentRepository.GetByUser(UserID, paymentId);
-                if (payment == null)
-                    return BadRequest("Invalid payment");
-
-                //TODO: Delete from dropx
-                _paymentRepository.Delete(paymentId);
-                return NoContent();
-            }
-            catch (Exception)
-            {
-
-                throw;
-            }
-        }
 
 
-        [HttpPut("{typeId}/payment/{paymentId}")]
-        [ProducesResponseType(typeof(PaymentResponse), StatusCodes.Status200OK)]
-        public async Task<IActionResult> UpdatePayment(
-            [FromForm(Name = "payment_receipt")] IFormFile paymentReceipt,
-            [FromForm(Name = "payment_document")] IFormFile paymentDocument,
-            [FromForm(Name = "description")] string description,
-            [FromForm(Name = "payment_date")] DateTime paymentDate,
-            [FromRoute] string typeId,
-            [FromRoute] string paymentId)
-        {
-            try
-            {
-                if (paymentDate == default)
-                    return BadRequest("Invalid payment date");
 
-                if (string.IsNullOrWhiteSpace(description))
-                    return BadRequest("Invalid description");
-
-                if (paymentReceipt == default && paymentDocument == null)
-                    return BadRequest("Document and receipt not found");
-
-                var type = _repository.GetByUserID(UserID, typeId);
-                if (type == null)
-                    return BadRequest("Invalid payment type");
-
-                var payment = _paymentRepository.GetByUser(UserID, paymentId);
-                if (payment == null)
-                    return BadRequest("Invalid payment");
-
-                var month = paymentDate.Month;
-                var year = paymentDate.Year;
-
-                {
-                    var paymentSameDate = _paymentRepository.GetByYearMonth(type.Id, year, month);
-                    if(paymentSameDate != null && paymentSameDate.Id != paymentId)
-                        return BadRequest("There is already a payment for this month and year registered");
-                }
-
-                payment.Description = description;
-
-                payment.Month = month;
-                payment.Year = year;
-
-                var folderName = $"/{type.Code}/{year}/{month}";
-
-
-                var receiptFileName = $"{type.Code}_receipt_{year}_{month}.pdf";
-                var documentFileName = $"{type.Code}_document_{year}_{month}.pdf";
-
-                if (paymentReceipt != null)
-                {
-                    payment.PaymentReceipt = await uploadfile(paymentReceipt, folderName, receiptFileName);
-                }
-                else
-                {
-                    //TODO: delete file
-                }
-
-                if (paymentDocument != null)
-                {
-                    payment.PaymentDocument = await uploadfile(paymentDocument, folderName, documentFileName);
-                }
-                else
-                {
-                    //TODO: delete file
-                }
-
-                _paymentRepository.Update(paymentId, payment);
-
-                var paymentResponse = _mapper.Map<Payment, PaymentResponse>(payment);
-                return Ok(paymentResponse);
-            }
-            catch (Exception)
-            {
-
-                throw;
-            }
-        }
-
-        [HttpGet("{typeId}/payment")]
-        [ProducesResponseType(typeof(IEnumerable<PaymentResponse>), StatusCodes.Status200OK)]
-        public IActionResult ListPayment([FromRoute] string typeId)
-        {
-            try
-            {
-                var payments = _paymentRepository.ListPayment(UserID, typeId)
-                    .Select(_mapper.Map<Payment, PaymentResponse>)
-                    .ToList();
-
-                return Ok(payments);
-            }
-            catch (Exception)
-            {
-
-                throw;
-            }
-        }
-
-
-        [HttpPost("{typeId}/payment")]
-        [ProducesResponseType(typeof(PaymentResponse), StatusCodes.Status200OK)]
-        public async Task<IActionResult> InsertPayment(
-            [FromForm(Name = "payment_receipt")] IFormFile paymentReceipt,
-            [FromForm(Name = "payment_document")] IFormFile paymentDocument,
-            [FromForm(Name = "description")] string description,
-            [FromForm(Name = "payment_date")] DateTime paymentDate,
-            [FromRoute] string typeId)
-        {
-            try
-            {
-                if (paymentDate == default)
-                    return BadRequest("Invalid payment date");
-
-                if (string.IsNullOrWhiteSpace(description))
-                    return BadRequest("Invalid description");
-
-                if (paymentReceipt == default && paymentDocument == null)
-                    return BadRequest("Document and receipt not found");
-
-                var type = _repository.GetByUserID(UserID, typeId);
-                if (type == null)
-                    return BadRequest("Invalid payment type");
-
-                var month = paymentDate.Month;
-                var year = paymentDate.Year;
-
-                if (_paymentRepository.GetByYearMonth(type.Id, year, month) != null)
-                    return BadRequest("There is already a payment for this month and year registered");
-
-                var folderName = $"/{type.Code}/{year}/{month}";
-                _dropboxService.CreateFolderIfNotExists(folderName);
-
-                var payment = new Payment
-                {
-                    UserId = UserID,
-                    CreateDate = DateTime.Now,
-                    Description = description,
-                    PaymentType = type.Id,
-                    Month = month,
-                    Year = year
-                };
-
-                if (paymentReceipt != null)
-                {
-                    var receiptFileName = $"{type.Code}_receipt_{year}_{month}.pdf";
-                    payment.PaymentReceipt = await uploadfile(paymentReceipt, folderName, receiptFileName);
-                }
-                 
-                
-                if(paymentDocument != null)
-                {
-                    var documentFileName = $"{type.Code}_document_{year}_{month}.pdf";
-                    payment.PaymentDocument = await uploadfile(paymentDocument, folderName, documentFileName);
-                }
-
-                _paymentRepository.Insert(payment);
-
-                var paymentResponse = _mapper.Map<Payment, PaymentResponse>(payment);
-                return Ok(paymentResponse);
-            }
-            catch (Exception)
-            {
-
-                throw;
-            }
-        }
     }
 }

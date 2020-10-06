@@ -2,7 +2,6 @@
 using ComprovantesPagamento.Domain.Models;
 using MongoDB.Driver;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 
 namespace ComprovantesPagamento.Repositories

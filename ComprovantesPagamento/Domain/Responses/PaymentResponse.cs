@@ -17,6 +17,13 @@ namespace ComprovantesPagamento.Domain.Responses
         [JsonPropertyName("payment_document")]
         public string PaymentDocument { get; set; }
 
+        [JsonPropertyName("payment_type")]
+        public string PaymentType { get; set; }
+
+        [JsonPropertyName("payment_type_code")]
+        public string PaymentTypeCode { get; set; }
+
+
         [JsonPropertyName("user_id")]
         public string UserId { get; set; }
 

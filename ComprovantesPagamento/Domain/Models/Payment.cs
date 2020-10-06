@@ -22,6 +22,9 @@ namespace ComprovantesPagamento.Domain.Models
         [BsonElement("payment_type")]
         public string PaymentType { get; set; }
 
+        [BsonElement("payment_type_code")]
+        public string PaymentTypeCode { get; set; }
+
         [BsonElement("user_id")]
         public string UserId { get; set; }
 
@@ -31,7 +34,18 @@ namespace ComprovantesPagamento.Domain.Models
         [BsonElement("year")]
         public int Year { get; set; }
 
+        [BsonElement("payment_date")]
+        public DateTime PaymentDate { get; set; }
+
         [BsonElement("create_date")]
         public DateTime CreateDate { get; set; }
+
+
+        public string GetFolderName() => $"/{PaymentTypeCode}/{Year}/{Month}";
+
+        public string GetReceiptFileName() => $"{PaymentTypeCode}_receipt_{Year}_{Month}.pdf";
+
+        public string GetDocumentFileName() => $"{PaymentTypeCode}_document_{Year}_{Month}.pdf";
+
     }
 }
